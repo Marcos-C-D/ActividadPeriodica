@@ -24,8 +24,11 @@ class AlarmActivity : ComponentActivity() {
         setTurnScreenOn(true)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val id = intent.getIntExtra("id", -1)
-        val plan = Store.load(this).firstOrNull { it.id == id } ?: run { finish(); return }
-        setContent { MaterialTheme { Screen(plan) } }
+        val label = intent.getStringExtra("label") ?: "Actividad"
+        val dur = intent.getIntExtra("dur", 10).coerceAtLeast(1)
+        val auto = intent.getBooleanExtra("auto", false)
+        if (auto) stopRinging(id)
+        setContent { MaterialTheme { Screen(id, label, dur, auto) } }
     }
 
     private fun stopRinging(id: Int) =
@@ -35,10 +38,11 @@ class AlarmActivity : ComponentActivity() {
         Store.save(this, Store.load(this).map { if (it.id == id) it.copy(done = it.done + 1) else it })
 
     @Composable
-    private fun Screen(p: Plan) {
-        var phase by rememberSaveable { mutableStateOf(0) }       // 0 suena · 1 cuenta atrás · 2 terminada
-        var end by rememberSaveable { mutableStateOf(0L) }
-        var left by rememberSaveable { mutableStateOf(p.durationMin * 60) }
+    private fun Screen(id: Int, label: String, dur: Int, auto: Boolean) {
+        // fase: 0 suena · 1 cuenta atrás · 2 terminada
+        var phase by rememberSaveable { mutableStateOf(if (auto) 1 else 0) }
+        var end by rememberSaveable { mutableStateOf(if (auto) System.currentTimeMillis() + dur * 60_000L else 0L) }
+        var left by rememberSaveable { mutableStateOf(dur * 60) }
 
         LaunchedEffect(phase) {
             if (phase == 1) {
@@ -53,24 +57,24 @@ class AlarmActivity : ComponentActivity() {
         }
 
         Column(
-            Modifier.fillMaxSize().padding(32.dp),
+            Modifier.fillMaxSize().systemBarsPadding().padding(32.dp),
             Arrangement.Center, Alignment.CenterHorizontally
         ) {
-            Text(p.label, fontSize = 28.sp)
+            Text(label, fontSize = 28.sp)
             Spacer(Modifier.height(24.dp))
             if (phase > 0) Text("%02d:%02d".format(left / 60, left % 60), fontSize = 72.sp)
             Spacer(Modifier.height(24.dp))
             when (phase) {
                 0 -> Button(onClick = {
-                    stopRinging(p.id)
-                    end = System.currentTimeMillis() + p.durationMin * 60_000L
+                    stopRinging(id)
+                    end = System.currentTimeMillis() + dur * 60_000L
                     phase = 1
-                }) { Text("Empezar (${p.durationMin} min)") }
+                }) { Text("Empezar ($dur min)") }
                 1 -> Text("En marcha…")
-                else -> Button(onClick = { markDone(p.id); finish() }) { Text("Lo hice ✔") }
+                else -> Button(onClick = { markDone(id); finish() }) { Text("Lo hice ✔") }
             }
             Spacer(Modifier.height(16.dp))
-            TextButton(onClick = { stopRinging(p.id); finish() }) { Text("Omitir") }
+            TextButton(onClick = { stopRinging(id); finish() }) { Text("Omitir") }
         }
     }
 }
