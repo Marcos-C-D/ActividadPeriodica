@@ -66,6 +66,21 @@ fun Main() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item { Permisos(ctx) }
+                if (plans.isNotEmpty()) item {
+                    val anyOn = plans.any { it.enabled }
+                    OutlinedButton(
+                        onClick = {
+                            val nm = ctx.getSystemService(NotificationManager::class.java)
+                            val updated = plans.map { it.copy(enabled = !anyOn) }
+                            updated.forEach {
+                                if (it.enabled) Scheduler.schedule(ctx, it)
+                                else { Scheduler.cancel(ctx, it.id); nm.cancel(it.id) }
+                            }
+                            commit(updated)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text(if (anyOn) "Desactivar todos los recordatorios" else "Reactivar todos los recordatorios") }
+                }
                 items(plans, key = { it.id }) { p ->
                     Card(Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
