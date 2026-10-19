@@ -86,6 +86,7 @@ fun Main() {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(p.label, style = MaterialTheme.typography.titleMedium)
+                                if (p.notes.isNotBlank()) Text(p.notes)
                                 Text(summary(p))
                                 Text("Hechas: ${p.done}")
                                 Row {
@@ -126,6 +127,7 @@ fun Permisos(ctx: Context) {
 @Composable
 fun Editor(p: Plan, onCancel: () -> Unit, onSave: (Plan) -> Unit) {
     var label by remember { mutableStateOf(p.label) }
+    var notes by remember { mutableStateOf(p.notes) }
     var days by remember { mutableStateOf(p.days) }
     var sel by remember { mutableStateOf(0) }
     val d = days[sel]
@@ -139,6 +141,10 @@ fun Editor(p: Plan, onCancel: () -> Unit, onSave: (Plan) -> Unit) {
             OutlinedTextField(
                 label, { label = it }, modifier = Modifier.fillMaxWidth(),
                 label = { Text("¿Qué hay que hacer?") }
+            )
+            OutlinedTextField(
+                notes, { notes = it }, modifier = Modifier.fillMaxWidth(),
+                label = { Text("Notas (salen bajo el título)") }
             )
             Text("Día de la semana (toca uno para configurarlo)")
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -182,6 +188,7 @@ fun Editor(p: Plan, onCancel: () -> Unit, onSave: (Plan) -> Unit) {
                     onSave(
                         p.copy(
                             label = label.ifBlank { "Actividad" },
+                            notes = notes.trim(),
                             days = days.map {
                                 it.copy(every = it.every.coerceAtLeast(1), durationMin = it.durationMin.coerceAtLeast(1))
                             }

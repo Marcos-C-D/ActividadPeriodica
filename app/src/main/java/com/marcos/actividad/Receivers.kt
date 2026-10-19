@@ -50,7 +50,8 @@ class AlarmReceiver : BroadcastReceiver() {
         val open = PendingIntent.getActivity(
             c, id,
             Intent(c, AlarmActivity::class.java)
-                .putExtra("id", id).putExtra("label", p.label).putExtra("dur", d.durationMin)
+                .putExtra("id", id).putExtra("label", p.label).putExtra("notes", p.notes)
+                .putExtra("dur", d.durationMin)
                 .putExtra("auto", !d.fullScreen) // notificación: al tocarla arranca el temporizador
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -61,15 +62,21 @@ class AlarmReceiver : BroadcastReceiver() {
             .setContentTitle(p.label)
             .setContentIntent(open)
             .setAutoCancel(true)
+        val hint = if (d.fullScreen) "Toca para empezar (${d.durationMin} min)"
+                   else "Toca para abrir el temporizador (${d.durationMin} min)"
         if (d.fullScreen) {
-            b.setContentText("Toca para empezar (${d.durationMin} min)")
+            b.setContentText(hint)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setFullScreenIntent(open, true)
         } else {
-            b.setContentText("Toca para abrir el temporizador (${d.durationMin} min)")
+            b.setContentText(hint)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
+        }
+        if (p.notes.isNotBlank()) {
+            b.setContentText(p.notes)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(p.notes + "\n" + hint))
         }
         val n = b.build()
         if (d.fullScreen) n.flags = n.flags or Notification.FLAG_INSISTENT // suena en bucle hasta abrirla

@@ -25,10 +25,11 @@ class AlarmActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val id = intent.getIntExtra("id", -1)
         val label = intent.getStringExtra("label") ?: "Actividad"
+        val notes = intent.getStringExtra("notes") ?: ""
         val dur = intent.getIntExtra("dur", 10).coerceAtLeast(1)
         val auto = intent.getBooleanExtra("auto", false)
         if (auto) stopRinging(id)
-        setContent { MaterialTheme { Screen(id, label, dur, auto) } }
+        setContent { MaterialTheme { Screen(id, label, notes, dur, auto) } }
     }
 
     private fun stopRinging(id: Int) =
@@ -38,7 +39,7 @@ class AlarmActivity : ComponentActivity() {
         Store.save(this, Store.load(this).map { if (it.id == id) it.copy(done = it.done + 1) else it })
 
     @Composable
-    private fun Screen(id: Int, label: String, dur: Int, auto: Boolean) {
+    private fun Screen(id: Int, label: String, notes: String, dur: Int, auto: Boolean) {
         // fase: 0 suena · 1 cuenta atrás · 2 terminada
         var phase by rememberSaveable { mutableStateOf(if (auto) 1 else 0) }
         var end by rememberSaveable { mutableStateOf(if (auto) System.currentTimeMillis() + dur * 60_000L else 0L) }
@@ -61,6 +62,10 @@ class AlarmActivity : ComponentActivity() {
             Arrangement.Center, Alignment.CenterHorizontally
         ) {
             Text(label, fontSize = 28.sp)
+            if (notes.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(notes, fontSize = 18.sp)
+            }
             Spacer(Modifier.height(24.dp))
             if (phase > 0) Text("%02d:%02d".format(left / 60, left % 60), fontSize = 72.sp)
             Spacer(Modifier.height(24.dp))

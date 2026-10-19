@@ -26,7 +26,8 @@ data class Plan(
     val label: String,
     val enabled: Boolean = true,
     val done: Int = 0,
-    val days: List<DayCfg> = List(7) { DayCfg() }   // 0 = lunes ... 6 = domingo
+    val days: List<DayCfg> = List(7) { DayCfg() },   // 0 = lunes ... 6 = domingo
+    val notes: String = ""
 )
 
 val DIAS = listOf("L", "M", "X", "J", "V", "S", "D")
@@ -56,8 +57,9 @@ object Store {
             val o = a.getJSONObject(n)
             val d = o.getJSONArray("days")
             Plan(
-                o.getInt("id"), o.getString("label"), o.getBoolean("enabled"), o.optInt("done"),
-                (0 until 7).map { i ->
+                id = o.getInt("id"), label = o.getString("label"), enabled = o.getBoolean("enabled"),
+                done = o.optInt("done"), notes = o.optString("notes", ""),
+                days = (0 until 7).map { i ->
                     val x = d.getJSONObject(i)
                     DayCfg(
                         x.getBoolean("active"), x.getBoolean("fixed"), x.getInt("startMin"), x.getInt("endMin"),
@@ -82,7 +84,7 @@ object Store {
             }
             a.put(
                 JSONObject().put("id", p.id).put("label", p.label).put("enabled", p.enabled)
-                    .put("done", p.done).put("days", d)
+                    .put("done", p.done).put("notes", p.notes).put("days", d)
             )
         }
         prefs(c).edit().putString("list2", a.toString()).apply()
